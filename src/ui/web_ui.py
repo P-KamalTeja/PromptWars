@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_file, send_from_directory
 
 from src.core import Config, get_logger
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget
@@ -44,17 +44,35 @@ class WebUI:
     def _setup_routes(self):
         """Setup Flask routes."""
 
+        @self.app.errorhandler(Exception)
+        def handle_unexpected_error(error):
+            """Return a clear response for uncaught web errors."""
+            logger.exception("Unhandled web error: %s", error)
+            if request.path.startswith("/api/"):
+                return jsonify({"error": "Internal server error"}), 500
+
+            return (
+                "<h1>AI Travel Planner</h1>"
+                "<p>The app started, but the page failed to load. "
+                "Check Cloud Run logs for the traceback.</p>",
+                500,
+                {"Content-Type": "text/html; charset=utf-8"},
+            )
+
         @self.app.route("/")
         def index():
             """Serve main page."""
-            try:
-                return render_template("index.html")
-            except Exception:
-                logger.exception(
-                    "Failed to render index.html from %s",
-                    self.app.template_folder,
-                )
-                raise
+            index_path = UI_DIR / "templates" / "index.html"
+            if index_path.exists():
+                return send_file(index_path)
+
+            logger.error("Missing index.html at %s", index_path)
+            return (
+                "<h1>AI Travel Planner</h1>"
+                "<p>The app is running, but index.html was not found.</p>",
+                200,
+                {"Content-Type": "text/html; charset=utf-8"},
+            )
 
         @self.app.route("/static/<path:filename>")
         def serve_static(filename):
