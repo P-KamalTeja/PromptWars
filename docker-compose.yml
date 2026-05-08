@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  travel-planner:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - ENABLE_WEATHER=true
+      - ENABLE_CACHING=true
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped

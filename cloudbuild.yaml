@@ -1,0 +1,44 @@
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest'
+      - '.'
+
+  # Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/cloud-builders/run'
+    args:
+      - 'deploy'
+      - '$_SERVICE_NAME'
+      - '--image=gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+      - '--region=$_REGION'
+      - '--platform=managed'
+      - '--no-allow-unauthenticated'
+      - '--memory=512Mi'
+      - '--cpu=1'
+      - '--timeout=3600s'
+      - '--max-instances=100'
+      - '--set-env-vars=GEMINI_API_KEY=$_GEMINI_API_KEY,LOG_LEVEL=INFO,ENABLE_CACHING=true'
+
+images:
+  - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:latest'
+
+substitutions:
+  _SERVICE_NAME: 'ai-travel-platform'
+  _REGION: 'us-central1'
+  _GEMINI_API_KEY: ''  # Set via Cloud Build secrets or pass as substitution
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY

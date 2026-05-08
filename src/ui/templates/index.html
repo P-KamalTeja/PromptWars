@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Travel Planner - Plan Your Perfect Trip</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/accessibility.css">
+</head>
+<body>
+    <!-- Skip to main content link for accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <!-- Header -->
+    <header role="banner">
+        <nav role="navigation" aria-label="Main navigation">
+            <div class="container">
+                <div class="logo">
+                    <h1>🌍 Travel AI Planner</h1>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#plan" class="nav-link active">Plan Trip</a></li>
+                    <li><a href="#update" class="nav-link">Update Trip</a></li>
+                    <li><a href="#about" class="nav-link">About</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" role="main">
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero" role="region" aria-label="Hero section">
+                <h2>Plan Your Perfect Trip in Seconds</h2>
+                <p>AI-powered personalized travel itineraries based on your budget, interests, and preferences</p>
+            </section>
+
+            <!-- Plan Trip Section -->
+            <section id="plan" class="section" role="region" aria-label="Plan trip section">
+                <h2>Plan Your Trip</h2>
+                <div class="form-container">
+                    <form id="tripForm" aria-label="Trip planning form">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="destination">🏖️ Destination <span class="required" aria-label="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="destination" 
+                                    name="destination"
+                                    placeholder="e.g., Paris, Tokyo, New York"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="destination-help"
+                                >
+                                <small id="destination-help">Enter the city or region you want to visit</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="budget">💰 Total Budget (USD) <span class="required" aria-label="required">*</span></label>
+                                <input 
+                                    type="number" 
+                                    id="budget" 
+                                    name="budget"
+                                    value="2000"
+                                    min="100"
+                                    max="1000000"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="budget-help"
+                                >
+                                <small id="budget-help">Minimum $100, Maximum $1,000,000</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="days">📅 Trip Duration (Days) <span class="required" aria-label="required">*</span></label>
+                                <input 
+                                    type="number" 
+                                    id="days" 
+                                    name="days"
+                                    value="5"
+                                    min="1"
+                                    max="30"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="days-help"
+                                >
+                                <small id="days-help">Between 1 and 30 days</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="interests">⭐ Interests <span class="required" aria-label="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="interests" 
+                                    name="interests"
+                                    placeholder="Museums, Hiking, Food, History"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="interests-help"
+                                >
+                                <small id="interests-help">Comma-separated interests</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="travelers">👥 Number of Travelers <span class="required" aria-label="required">*</span></label>
+                                <input 
+                                    type="number" 
+                                    id="travelers" 
+                                    name="travelers"
+                                    value="1"
+                                    min="1"
+                                    max="100"
+                                    required
+                                    aria-required="true"
+                                    aria-describedby="travelers-help"
+                                >
+                                <small id="travelers-help">Between 1 and 100 travelers</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="traveler_type">👨‍👩‍👧 Traveler Type <span class="required" aria-label="required">*</span></label>
+                                <select 
+                                    id="traveler_type" 
+                                    name="traveler_type"
+                                    required
+                                    aria-required="true"
+                                >
+                                    <option value="solo">Solo Traveler</option>
+                                    <option value="couple">Couple</option>
+                                    <option value="family">Family</option>
+                                    <option value="group">Group</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg" aria-label="Generate itinerary">
+                            🚀 Generate Itinerary
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="loading" class="loading hidden" role="status" aria-live="polite" aria-label="Loading">
+                    <div class="spinner"></div>
+                    <p>Creating your personalized itinerary...</p>
+                </div>
+
+                <!-- Results -->
+                <div id="results" class="results hidden" role="region" aria-live="polite" aria-label="Trip results">
+                    <div class="result-card">
+                        <h3>✅ Trip Successfully Created!</h3>
+                        <div class="trip-info">
+                            <p><strong>Trip ID:</strong> <code id="tripId"></code></p>
+                            <button type="button" class="btn btn-secondary btn-sm" id="copyTripId" aria-label="Copy trip ID to clipboard">
+                                📋 Copy Trip ID
+                            </button>
+                        </div>
+                        <div class="trip-details">
+                            <p><strong>Destination:</strong> <span id="resultDestination"></span></p>
+                            <p><strong>Duration:</strong> <span id="resultDuration"></span> days</p>
+                            <p><strong>Total Cost:</strong> $<span id="resultCost"></span></p>
+                            <p><strong>Confidence Score:</strong> <span id="resultConfidence"></span>%</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="error" class="error hidden" role="alert" aria-live="assertive">
+                    <p id="errorMessage"></p>
+                </div>
+            </section>
+
+            <!-- Update Trip Section -->
+            <section id="update" class="section" role="region" aria-label="Update trip section">
+                <h2>Update Your Trip</h2>
+                <p class="section-description">Have a trip already planned? Update it with your new preferences.</p>
+                <div class="form-container">
+                    <form id="updateForm" aria-label="Update trip form">
+                        <div class="form-group">
+                            <label for="tripIdInput">Trip ID <span class="required" aria-label="required">*</span></label>
+                            <input 
+                                type="text" 
+                                id="tripIdInput" 
+                                name="trip_id"
+                                placeholder="Paste your trip ID here"
+                                required
+                                aria-required="true"
+                                aria-describedby="tripid-help"
+                            >
+                            <small id="tripid-help">You received this when you planned your trip</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="updateRequest">What would you like to change? <span class="required" aria-label="required">*</span></label>
+                            <textarea 
+                                id="updateRequest" 
+                                name="update_request"
+                                placeholder="e.g., Add more museums, reduce budget, add family-friendly activities"
+                                rows="4"
+                                required
+                                aria-required="true"
+                                aria-describedby="update-help"
+                            ></textarea>
+                            <small id="update-help">Describe your changes or new preferences</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" aria-label="Update itinerary">
+                            ✏️ Update Itinerary
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Update Loading -->
+                <div id="updateLoading" class="loading hidden" role="status" aria-live="polite" aria-label="Updating">
+                    <div class="spinner"></div>
+                    <p>Updating your itinerary...</p>
+                </div>
+
+                <!-- Update Results -->
+                <div id="updateResults" class="results hidden" role="region" aria-live="polite" aria-label="Updated trip results">
+                    <div class="result-card success">
+                        <h3>✅ Trip Updated Successfully!</h3>
+                        <p>Your itinerary has been updated based on your preferences.</p>
+                    </div>
+                </div>
+
+                <!-- Update Error -->
+                <div id="updateError" class="error hidden" role="alert" aria-live="assertive">
+                    <p id="updateErrorMessage"></p>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="section about" role="region" aria-label="About section">
+                <h2>About This Platform</h2>
+                
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>🤖 AI-Powered</h3>
+                        <p>Uses Google Gemini AI to create personalized travel recommendations</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🌦️ Weather Aware</h3>
+                        <p>Real-time weather integration for better planning</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>💰 Budget Conscious</h3>
+                        <p>Respects your budget with realistic cost estimates</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>♿ Accessible</h3>
+                        <p>Fully accessible design for all users</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📱 Mobile Friendly</h3>
+                        <p>Works seamlessly on all devices</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>🎯 Personalized</h3>
+                        <p>Tailored to your interests and preferences</p>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h3>How It Works</h3>
+                    <ol>
+                        <li>Enter your travel destination, budget, and preferences</li>
+                        <li>Our AI generates a personalized itinerary</li>
+                        <li>You receive a unique Trip ID to save your itinerary</li>
+                        <li>Update your itinerary anytime with new preferences</li>
+                    </ol>
+                </div>
+
+                <div class="info-box">
+                    <h3>Why Choose Us?</h3>
+                    <ul>
+                        <li>✅ Completely free to use</li>
+                        <li>✅ No registration required</li>
+                        <li>✅ Fast and reliable</li>
+                        <li>✅ Privacy-focused</li>
+                        <li>✅ Open source</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer role="contentinfo">
+        <div class="container">
+            <p>&copy; 2024 AI Travel Planner. All rights reserved.</p>
+            <p>Built with ❤️ using Python, Gemini AI, and Open Source Technologies</p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="/static/js/main.js"></script>
+    <script src="/static/js/accessibility.js"></script>
+</body>
+</html>

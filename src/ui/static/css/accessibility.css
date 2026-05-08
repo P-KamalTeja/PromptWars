@@ -1,0 +1,267 @@
+/* Accessibility Styles */
+
+/* Skip to Main Content Link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px;
+    text-decoration: none;
+    z-index: 100;
+    border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+    top: 0;
+}
+
+/* Focus Styles */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+a:focus {
+    outline: 3px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: more) {
+    :root {
+        --primary-color: #0d47a1;
+        --primary-dark: #0a2e7d;
+        --text: #000;
+        --text-light: #333;
+        --border: #000;
+    }
+
+    body {
+        border: 2px solid #000;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    .spinner {
+        animation: none;
+        border: 4px solid var(--primary-color);
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --dark: #f9fafb;
+        --light: #1f2937;
+        --text: #f3f4f6;
+        --text-light: #d1d5db;
+        --border: #374151;
+    }
+
+    body {
+        background-color: #111827;
+        color: var(--text);
+    }
+
+    .form-container {
+        background: #1f2937;
+        border-color: var(--border);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        background-color: #111827;
+        color: var(--text);
+        border-color: var(--border);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        background-color: #111827;
+    }
+
+    .result-card,
+    .feature-card,
+    .info-box,
+    .trip-info,
+    .trip-details {
+        background-color: #374151;
+        color: var(--text);
+    }
+
+    footer {
+        background-color: #0f172a;
+    }
+}
+
+/* Text Sizing */
+body {
+    font-size: 1rem;
+}
+
+/* Line Height for Readability */
+p, li, label {
+    line-height: 1.8;
+}
+
+/* Color Contrast for Error Messages */
+.error {
+    background-color: #7f1d1d;
+    color: #fecaca;
+    border-color: #dc2626;
+}
+
+/* Readable Link Styles */
+a {
+    color: var(--primary-color);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+}
+
+a:visited {
+    color: var(--secondary-color);
+}
+
+a:hover {
+    text-decoration-thickness: 3px;
+}
+
+/* Form Error States */
+input:invalid,
+select:invalid,
+textarea:invalid {
+    border-color: var(--error-color);
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 20px;
+    padding-right: 36px;
+}
+
+/* Button Disabled State */
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Loading State for Buttons */
+button.loading {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}
+
+/* Aria-Live Announcements */
+[role="status"],
+[role="alert"] {
+    position: relative;
+}
+
+/* Better Touch Targets */
+button,
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+input[type="checkbox"],
+input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+}
+
+/* Link Underline Visibility */
+a.nav-link {
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: border-color 0.3s;
+}
+
+a.nav-link:hover {
+    border-bottom-color: white;
+}
+
+/* Heading Hierarchy */
+h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+}
+
+h2 {
+    font-size: 1.75rem;
+    line-height: 1.3;
+}
+
+h3 {
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+/* Semantic List Styling */
+ul, ol {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+li {
+    margin-bottom: 0.5rem;
+}
+
+/* Code Blocks */
+code {
+    background-color: var(--light);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Table Accessibility */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+table th {
+    background-color: var(--light);
+    font-weight: bold;
+    text-align: left;
+    padding: 1rem;
+    border: 1px solid var(--border);
+}
+
+table td {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+}
+
+/* Print Styles */
+@media print {
+    .skip-link,
+    header nav,
+    footer {
+        display: none;
+    }
+
+    body {
+        background-color: white;
+        color: black;
+    }
+
+    a {
+        text-decoration: underline;
+    }
+
+    button {
+        border: 1px solid black;
+    }
+}
