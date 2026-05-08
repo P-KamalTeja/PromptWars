@@ -60,9 +60,9 @@ async function handleTripPlanSubmit() {
         document.getElementById('resultDestination').textContent = data.destination;
         document.getElementById('resultDuration').textContent = data.duration;
         document.getElementById('resultCost').textContent = data.total_cost.toFixed(2);
-        document.getElementById('resultConfidence').textContent = (
-            data.confidence_score * 100
-        ).toFixed(1);
+        document.getElementById('resultItinerary').textContent = (
+            data.itinerary_details || 'Your itinerary is ready.'
+        );
 
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('results').classList.remove('hidden');

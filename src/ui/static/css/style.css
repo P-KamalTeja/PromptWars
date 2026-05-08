@@ -319,6 +319,18 @@ main {
     color: var(--dark);
 }
 
+#resultItinerary {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background-color: var(--light);
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 0.75rem;
+    line-height: 1.7;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
 /* Error Messages */
 .error {
     background-color: #fee2e2;

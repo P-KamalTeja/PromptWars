@@ -166,10 +166,23 @@ class TripPlanningEngine:
     @staticmethod
     def _build_fallback_itinerary(trip_request: TripRequest) -> str:
         """Build a simple fallback itinerary when AI generation is unavailable."""
-        return (
-            f"Fallback itinerary for {trip_request.destination}. "
-            "Explore local attractions, food, culture, and rest time each day."
-        )
+        lines = [f"Trip plan for {trip_request.destination}"]
+        interests = ", ".join(trip_request.interests) or "local highlights"
+
+        for day in range(1, trip_request.duration_days + 1):
+            lines.extend(
+                [
+                    f"Day {day}",
+                    "Morning: Start after breakfast and visit one nearby "
+                    "popular attraction at a relaxed pace.",
+                    f"Afternoon: Spend time on {interests}. Take breaks, "
+                    "drink water, and avoid rushing.",
+                    "Evening: Have dinner close to your stay and review the "
+                    "next day's plan.",
+                ]
+            )
+
+        return "\n".join(lines)
 
     @staticmethod
     def _parse_itinerary(
@@ -204,6 +217,12 @@ class TripPlanningEngine:
                 destination=destination,
                 trip_request=trip_request,
                 total_cost=trip_request.budget.total,
+            )
+            itinerary.alternative_options.append(
+                {
+                    "title": "Detailed itinerary",
+                    "description": itinerary_text,
+                }
             )
 
             # Parse day-by-day activities from text

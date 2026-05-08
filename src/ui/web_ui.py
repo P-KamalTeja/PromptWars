@@ -153,6 +153,9 @@ class WebUI:
                         "total_cost": itinerary.total_cost,
                         "confidence_score": itinerary.confidence_score,
                         "daily_itineraries": len(itinerary.daily_itineraries),
+                        "itinerary_details": self._format_itinerary_details(
+                            itinerary
+                        ),
                     }
                 ), 201
 
@@ -233,4 +236,45 @@ class WebUI:
             "confidence_score": 0.65,
             "daily_itineraries": days,
             "fallback": True,
+            "itinerary_details": WebUI._build_basic_itinerary_details(
+                destination,
+                days,
+                data.get("interests", ""),
+            ),
         }
+
+    @staticmethod
+    def _format_itinerary_details(itinerary):
+        """Return human-friendly itinerary text for the web result."""
+        if itinerary.alternative_options:
+            description = itinerary.alternative_options[0].get("description")
+            if description:
+                return description
+
+        return WebUI._build_basic_itinerary_details(
+            itinerary.destination.name,
+            itinerary.trip_request.duration_days,
+            ", ".join(itinerary.trip_request.interests),
+        )
+
+    @staticmethod
+    def _build_basic_itinerary_details(destination, days, interests):
+        """Build a readable daily itinerary for non-technical users."""
+        interest_text = interests or "local sightseeing, food, and culture"
+        plan = [f"Easy-to-follow itinerary for {destination}"]
+
+        for day in range(1, days + 1):
+            plan.extend(
+                [
+                    "",
+                    f"Day {day}",
+                    "Morning: Start after breakfast. Visit one nearby "
+                    "attraction and keep walking limited.",
+                    f"Afternoon: Enjoy {interest_text}. Take a rest break "
+                    "between activities.",
+                    "Evening: Eat dinner near your hotel or stay area. "
+                    "Keep the evening light and comfortable.",
+                ]
+            )
+
+        return "\n".join(plan)
