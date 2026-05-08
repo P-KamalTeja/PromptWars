@@ -1,5 +1,6 @@
 """Core trip planning engine."""
 import uuid
+from typing import TYPE_CHECKING
 from typing import Dict, Optional
 from datetime import datetime, timedelta
 
@@ -12,7 +13,10 @@ from src.models import (
     Weather,
 )
 from src.models.validator import InputValidator
-from src.services import GeminiService, WeatherService
+from src.services.weather_service import WeatherService
+
+if TYPE_CHECKING:
+    from src.services.gemini_service import GeminiService
 
 
 logger = get_logger(__name__)
@@ -28,9 +32,18 @@ class TripPlanningEngine:
             config: Application configuration
         """
         self.config = config
-        self.gemini_service = GeminiService(config)
+        self._gemini_service: Optional["GeminiService"] = None
         self.weather_service = WeatherService(config)
         self.trip_cache: Dict[str, ItineraryResponse] = {}
+
+    @property
+    def gemini_service(self) -> "GeminiService":
+        """Create Gemini service only when AI generation is needed."""
+        if self._gemini_service is None:
+            from src.services.gemini_service import GeminiService
+
+            self._gemini_service = GeminiService(self.config)
+        return self._gemini_service
 
     def plan_trip(self, trip_request: TripRequest) -> ItineraryResponse:
         """Create a complete trip itinerary.
@@ -49,13 +62,23 @@ class TripPlanningEngine:
             InputValidator.validate_trip_request(trip_request)
             logger.info(f"Planning trip to {trip_request.destination}")
 
-            # Get weather data
-            weather = self.weather_service.get_weather(trip_request.destination)
+            # Get weather data, but do not fail the whole trip if it is unavailable.
+            try:
+                weather = self.weather_service.get_weather(trip_request.destination)
+            except Exception:
+                logger.exception("Weather lookup failed; continuing without weather")
+                weather = None
 
-            # Generate itinerary with AI
-            itinerary_text = self.gemini_service.generate_itinerary(
-                trip_request, weather
-            )
+            # Generate itinerary with AI. If Gemini is not configured or unavailable,
+            # still return a structured starter itinerary so the UI remains usable.
+            try:
+                itinerary_text = self.gemini_service.generate_itinerary(
+                    trip_request,
+                    weather,
+                )
+            except Exception:
+                logger.exception("Gemini itinerary generation failed")
+                itinerary_text = self._build_fallback_itinerary(trip_request)
 
             # Parse and structure itinerary
             trip_id = str(uuid.uuid4())
@@ -99,12 +122,16 @@ class TripPlanningEngine:
             # Convert to text for AI processing
             existing_text = self._format_itinerary_for_update(existing_trip)
 
-            # Get updated itinerary from AI
-            updated_text = self.gemini_service.update_itinerary(
-                session_id=trip_id,
-                user_request=update_request,
-                existing_plan=existing_text,
-            )
+            # Get updated itinerary from AI, or keep the existing plan if unavailable.
+            try:
+                updated_text = self.gemini_service.update_itinerary(
+                    session_id=trip_id,
+                    user_request=update_request,
+                    existing_plan=existing_text,
+                )
+            except Exception:
+                logger.exception("Gemini itinerary update failed")
+                updated_text = existing_text
 
             # Parse updated itinerary
             updated_trip = self._parse_itinerary(
@@ -135,6 +162,14 @@ class TripPlanningEngine:
             Trip itinerary or None
         """
         return self.trip_cache.get(trip_id)
+
+    @staticmethod
+    def _build_fallback_itinerary(trip_request: TripRequest) -> str:
+        """Build a simple fallback itinerary when AI generation is unavailable."""
+        return (
+            f"Fallback itinerary for {trip_request.destination}. "
+            "Explore local attractions, food, culture, and rest time each day."
+        )
 
     @staticmethod
     def _parse_itinerary(
