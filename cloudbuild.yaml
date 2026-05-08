@@ -8,7 +8,7 @@ steps:
         pip install --no-cache-dir -r requirements.txt
         python -m compileall -q .
         python -m pytest
-        python -m flake8 src tests main.py app.py
+        python -m flake8 src tests main.py app.py wsgi.py
 
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
