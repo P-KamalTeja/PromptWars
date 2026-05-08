@@ -2,22 +2,23 @@
 import logging
 import sys
 import json
+import os
 from typing import Optional
 from datetime import datetime
+
+try:
+    import google.cloud.logging
+    from google.cloud.logging.handlers import CloudLoggingHandler
+    HAS_CLOUD_LOGGING = True
+except ImportError:
+    HAS_CLOUD_LOGGING = False
 
 
 class JSONFormatter(logging.Formatter):
     """JSON log formatter for structured logging."""
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format log record as JSON.
-
-        Args:
-            record: Log record to format
-
-        Returns:
-            JSON formatted log entry
-        """
+        """Format log record as JSON."""
         log_data = {
             "timestamp": datetime.utcnow().isoformat(),
             "level": record.levelname,
@@ -28,11 +29,10 @@ class JSONFormatter(logging.Formatter):
         if record.exc_info:
             log_data["exception"] = self.formatException(record.exc_info)
 
-        if hasattr(record, "user_id"):
-            log_data["user_id"] = record.user_id
-
-        if hasattr(record, "request_id"):
-            log_data["request_id"] = record.request_id
+        # Merge extra fields
+        for key, value in record.__dict__.items():
+            if key not in ["args", "asctime", "created", "exc_info", "exc_text", "filename", "funcName", "levelname", "levelno", "lineno", "module", "msecs", "message", "msg", "name", "pathname", "process", "processName", "relativeCreated", "stack_info", "thread", "threadName"]:
+                log_data[key] = value
 
         return json.dumps(log_data)
 
@@ -40,29 +40,20 @@ class JSONFormatter(logging.Formatter):
 def get_logger(
     name: str, level: str = "INFO", use_json: bool = False
 ) -> logging.Logger:
-    """Get or create a logger instance.
-
-    Args:
-        name: Logger name (typically __name__)
-        level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
-        use_json: Whether to use JSON formatting
-
-    Returns:
-        Configured logger instance
-    """
+    """Get or create a logger instance."""
     logger = logging.getLogger(name)
 
-    # Only configure if not already configured
     if logger.handlers:
         return logger
 
-    logger.setLevel(getattr(logging, level.upper(), logging.INFO))
+    log_level = getattr(logging, level.upper(), logging.INFO)
+    logger.setLevel(log_level)
 
     # Console handler
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(getattr(logging, level.upper(), logging.INFO))
+    console_handler.setLevel(log_level)
 
-    if use_json:
+    if use_json or os.getenv("LOG_FORMAT", "").lower() == "json":
         formatter = JSONFormatter()
     else:
         formatter = logging.Formatter(
@@ -73,43 +64,15 @@ def get_logger(
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+    # Cloud Logging handler (if on GCP)
+    if HAS_CLOUD_LOGGING and os.getenv("ENABLE_CLOUD_LOGGING", "false").lower() == "true":
+        try:
+            client = google.cloud.logging.Client()
+            handler = CloudLoggingHandler(client, name=name)
+            handler.setLevel(log_level)
+            logger.addHandler(handler)
+            logger.info("Google Cloud Logging handler added")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Cloud Logging: {str(e)}")
+
     return logger
-
-
-def log_request(logger: logging.Logger, method: str, endpoint: str, **kwargs):
-    """Log incoming request.
-
-    Args:
-        logger: Logger instance
-        method: HTTP method
-        endpoint: API endpoint
-        **kwargs: Additional context
-    """
-    logger.info(f"Request: {method} {endpoint}", extra=kwargs)
-
-
-def log_response(logger: logging.Logger, status_code: int, duration_ms: float, **kwargs):
-    """Log outgoing response.
-
-    Args:
-        logger: Logger instance
-        status_code: HTTP status code
-        duration_ms: Response time in milliseconds
-        **kwargs: Additional context
-    """
-    logger.info(
-        f"Response: {status_code} ({duration_ms:.2f}ms)",
-        extra=kwargs,
-    )
-
-
-def log_error(logger: logging.Logger, error: Exception, context: Optional[dict] = None):
-    """Log error with context.
-
-    Args:
-        logger: Logger instance
-        error: Exception that occurred
-        context: Additional context information
-    """
-    extra = context or {}
-    logger.error(f"Error: {str(error)}", exc_info=True, extra=extra)

@@ -1,9 +1,12 @@
 """Google Services integration module."""
 import google.generativeai as genai
+import vertexai
+from vertexai.generative_models import GenerativeModel, ChatSession, ResponseSchema, GenerationConfig
 import asyncio
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from datetime import datetime
 import time
+import json
 
 from src.core import Config, get_logger, GoogleServicesError
 from src.models import (
@@ -20,7 +23,7 @@ logger = get_logger(__name__)
 
 
 class GeminiService:
-    """Handles Gemini AI integrations."""
+    """Handles Gemini AI integrations via both Generative AI SDK and Vertex AI."""
 
     def __init__(self, config: Config):
         """Initialize Gemini service.
@@ -29,16 +32,23 @@ class GeminiService:
             config: Application configuration
         """
         self.config = config
-        self.client = None
         self.model = None
+        self.chat_sessions: Dict[str, Union[genai.ChatSession, ChatSession]] = {}
         self._initialize_client()
 
     def _initialize_client(self):
-        """Initialize Gemini client."""
+        """Initialize appropriate Gemini client based on config."""
         try:
-            genai.configure(api_key=self.config.GEMINI_API_KEY)
-            self.model = genai.GenerativeModel("gemini-1.5-flash")
-            logger.info("Gemini client initialized successfully")
+            if self.config.USE_VERTEX_AI and self.config.GOOGLE_CLOUD_PROJECT:
+                logger.info(f"Initializing Vertex AI in project {self.config.GOOGLE_CLOUD_PROJECT}")
+                vertexai.init(project=self.config.GOOGLE_CLOUD_PROJECT)
+                self.model = GenerativeModel("gemini-1.5-flash")
+                logger.info("Vertex AI Gemini client initialized successfully")
+            else:
+                logger.info("Initializing Google Generative AI SDK")
+                genai.configure(api_key=self.config.GEMINI_API_KEY)
+                self.model = genai.GenerativeModel("gemini-1.5-flash")
+                logger.info("Google Generative AI Gemini client initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {str(e)}")
             raise GoogleServicesError(
@@ -63,7 +73,13 @@ class GeminiService:
         try:
             prompt = self._build_itinerary_prompt(trip_request, weather)
 
-            response = self.model.generate_content(prompt)
+            if isinstance(self.model, GenerativeModel):
+                # Vertex AI
+                response = self.model.generate_content(prompt)
+            else:
+                # Google Generative AI SDK
+                response = self.model.generate_content(prompt)
+                
             logger.info(
                 f"Successfully generated itinerary for {trip_request.destination}"
             )
@@ -77,16 +93,16 @@ class GeminiService:
 
     def update_itinerary(
         self,
-        existing_plan: str,
+        session_id: str,
         user_request: str,
-        context: Optional[Dict[str, Any]] = None,
+        existing_plan: Optional[str] = None
     ) -> str:
-        """Update existing itinerary based on user feedback.
+        """Update existing itinerary based on user feedback using chat sessions.
 
         Args:
-            existing_plan: Current itinerary
+            session_id: Unique session ID for the conversation
             user_request: User's update request
-            context: Additional context
+            existing_plan: Optional initial plan to start the session
 
         Returns:
             Updated itinerary
@@ -95,21 +111,16 @@ class GeminiService:
             GoogleServicesError: If update fails
         """
         try:
-            prompt = f"""You are an expert travel planner AI assistant.
+            if session_id not in self.chat_sessions:
+                logger.info(f"Creating new chat session: {session_id}")
+                self.chat_sessions[session_id] = self.model.start_chat()
+                if existing_plan:
+                    # Initialize session with the existing plan
+                    initial_msg = f"Here is my existing trip plan:\n\n{existing_plan}\n\nPlease help me update it."
+                    self.chat_sessions[session_id].send_message(initial_msg)
 
-Existing Trip Plan:
-{existing_plan}
-
-User's Update Request:
-{user_request}
-
-Please update the itinerary to incorporate the user's request while maintaining the overall trip structure and budget constraints. 
-Preserve good formatting using markdown.
-Suggest alternatives where applicable.
-"""
-
-            response = self.model.generate_content(prompt)
-            logger.info("Successfully updated itinerary")
+            response = self.chat_sessions[session_id].send_message(user_request)
+            logger.info(f"Successfully updated itinerary for session {session_id}")
             return response.text
 
         except Exception as e:
@@ -125,7 +136,7 @@ Suggest alternatives where applicable.
         budget: float,
         duration_days: int,
     ) -> Dict[str, Any]:
-        """Get personalized recommendations.
+        """Get personalized recommendations with structured JSON output.
 
         Args:
             destination: Travel destination
@@ -140,28 +151,42 @@ Suggest alternatives where applicable.
             GoogleServicesError: If request fails
         """
         try:
-            prompt = f"""Based on the following trip parameters, provide detailed recommendations in JSON format:
-
-Destination: {destination}
+            prompt = f"""Provide detailed recommendations for a trip to {destination}.
 Preferences: {', '.join(preferences)}
 Budget: ${budget}
 Duration: {duration_days} days
 
-Provide recommendations for:
-1. Best neighborhoods/areas to stay
-2. Top-rated restaurants and cuisines
-3. Must-see attractions
-4. Local transportation options
-5. Hidden gems and local experiences
-6. Best time of day to visit attractions
-7. Safety tips
-8. Local customs and etiquette
-
-Format response as valid JSON."""
-
-            response = self.model.generate_content(prompt)
-            logger.info(f"Generated recommendations for {destination}")
-            return {"recommendations": response.text}
+Return a JSON object with the following structure:
+{{
+    "accommodation": [{{ "name": str, "description": str, "estimated_cost": float }}],
+    "restaurants": [{{ "name": str, "cuisine": str, "price_range": str }}],
+    "attractions": [{{ "name": str, "description": str, "best_time": str }}],
+    "transport": [{{ "type": str, "cost_level": str, "pro_tip": str }}],
+    "local_tips": [str]
+}}
+"""
+            generation_config = None
+            if self.config.USE_VERTEX_AI:
+                generation_config = GenerationConfig(response_mime_type="application/json")
+            
+            response = self.model.generate_content(
+                prompt,
+                generation_config=generation_config
+            )
+            
+            content = response.text
+            # If not using Vertex AI or if it didn't return pure JSON, try to parse
+            try:
+                # Basic cleaning if AI wrapped in markdown
+                if "```json" in content:
+                    content = content.split("```json")[1].split("```")[0].strip()
+                elif "```" in content:
+                    content = content.split("```")[1].split("```")[0].strip()
+                
+                return json.loads(content)
+            except json.JSONDecodeError:
+                logger.warning("Failed to parse Gemini response as JSON, returning raw text")
+                return {"raw_response": content}
 
         except Exception as e:
             logger.error(f"Recommendation generation failed: {str(e)}")
@@ -173,15 +198,7 @@ Format response as valid JSON."""
     def _build_itinerary_prompt(
         trip_request: TripRequest, weather: Optional[Weather] = None
     ) -> str:
-        """Build detailed prompt for itinerary generation.
-
-        Args:
-            trip_request: Trip planning request
-            weather: Current weather
-
-        Returns:
-            Formatted prompt
-        """
+        """Build detailed prompt for itinerary generation."""
         weather_section = ""
         if weather:
             weather_section = f"""
@@ -189,56 +206,29 @@ Current Weather in {trip_request.destination}:
 - Temperature: {weather.temperature}°C
 - Condition: {weather.condition}
 - Humidity: {weather.humidity}%
-- Wind Speed: {weather.wind_speed} km/h
-- UV Index: {weather.uv_index}
 """
 
         prompt = f"""You are an expert AI travel planner creating a detailed, personalized travel itinerary.
 
 TRIP DETAILS:
 Destination: {trip_request.destination}
-Start Date: {trip_request.start_date.strftime('%Y-%m-%d')}
-End Date: {trip_request.end_date.strftime('%Y-%m-%d')}
 Duration: {trip_request.duration_days} days
-Number of Travelers: {trip_request.travelers}
-Traveler Type: {trip_request.traveler_type.value}
+Travelers: {trip_request.travelers} ({trip_request.traveler_type.value})
 Total Budget: ${trip_request.budget.total}
 
-PREFERENCES & INTERESTS:
-Preferences: {', '.join([p.value for p in trip_request.preferences])}
+PREFERENCES:
+{', '.join([p.value for p in trip_request.preferences])}
 Interests: {', '.join(trip_request.interests)}
-
-BUDGET ALLOCATION:
-- Accommodation: ${trip_request.budget.get_allocation('accommodation'):.2f}
-- Activities: ${trip_request.budget.get_allocation('activities'):.2f}
-- Food & Dining: ${trip_request.budget.get_allocation('food'):.2f}
-- Transportation: ${trip_request.budget.get_allocation('transport'):.2f}
-
-ACCESSIBILITY NEEDS:
-{trip_request.accessibility_needs or 'None specified'}
-
-ADDITIONAL CONSTRAINTS:
-{chr(10).join([f'- {k}: {v}' for k, v in trip_request.constraints.items()]) if trip_request.constraints else 'None'}
 
 {weather_section}
 
-REQUIREMENTS FOR THE ITINERARY:
-1. Create a day-by-day detailed itinerary
-2. Include specific recommendations for:
-   - Accommodations (with estimated costs)
-   - Restaurants and cafes (with price ranges)
-   - Activities and attractions (with duration and cost)
-   - Local transportation options
-   - Walking routes and public transit
-3. Provide realistic time estimates for travel between locations
-4. Suggest budget-conscious alternatives
-5. Include indoor activities as weather backup options
-6. Consider local customs and peak/off-peak hours
-7. Suggest accessible alternatives where applicable
-8. Provide booking links and reservation tips
-9. Include estimated daily costs
-10. Format with clear day-by-day breakdown using markdown
+REQUIREMENTS:
+1. Day-by-day breakdown
+2. Specific accommodation and restaurant names
+3. Estimated costs for each activity
+4. Local transportation tips
+5. Format nicely in markdown.
 
-Generate a comprehensive, practical, and well-organized itinerary that maximizes the traveler's experience within their budget."""
+Generate a comprehensive and practical itinerary."""
 
         return prompt
