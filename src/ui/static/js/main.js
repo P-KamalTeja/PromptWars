@@ -49,8 +49,8 @@ async function handleTripPlanSubmit() {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to plan trip');
+            const error = await readErrorResponse(response);
+            throw new Error(error || 'Failed to plan trip');
         }
 
         const data = await response.json();
@@ -60,7 +60,9 @@ async function handleTripPlanSubmit() {
         document.getElementById('resultDestination').textContent = data.destination;
         document.getElementById('resultDuration').textContent = data.duration;
         document.getElementById('resultCost').textContent = data.total_cost.toFixed(2);
-        document.getElementById('resultConfidence').textContent = (data.confidence_score * 100).toFixed(1);
+        document.getElementById('resultConfidence').textContent = (
+            data.confidence_score * 100
+        ).toFixed(1);
 
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('results').classList.remove('hidden');
@@ -94,8 +96,8 @@ async function handleTripUpdateSubmit() {
         });
 
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to update trip');
+            const error = await readErrorResponse(response);
+            throw new Error(error || 'Failed to update trip');
         }
 
         document.getElementById('updateLoading').classList.add('hidden');
@@ -106,6 +108,15 @@ async function handleTripUpdateSubmit() {
         document.getElementById('updateErrorMessage').textContent = error.message;
         document.getElementById('updateLoading').classList.add('hidden');
         document.getElementById('updateError').classList.remove('hidden');
+    }
+}
+
+async function readErrorResponse(response) {
+    try {
+        const data = await response.json();
+        return data.error;
+    } catch {
+        return await response.text();
     }
 }
 
