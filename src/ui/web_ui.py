@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, request, jsonify, send_file, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 
 from src.core import Config, get_logger
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget
@@ -64,7 +64,8 @@ class WebUI:
             """Serve main page."""
             index_path = UI_DIR / "templates" / "index.html"
             if index_path.exists():
-                return send_file(index_path)
+                html = index_path.read_text(encoding="utf-8", errors="replace")
+                return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
             logger.error("Missing index.html at %s", index_path)
             return (
