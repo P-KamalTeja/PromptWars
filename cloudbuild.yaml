@@ -1,4 +1,15 @@
 steps:
+  # Install dependencies and run tests before building
+  - name: 'python:3.11-slim'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install --no-cache-dir -r requirements.txt
+        python -m compileall -q .
+        python -m pytest
+        python -m flake8 src tests main.py app.py
+
   # Build the Docker image
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -28,7 +39,8 @@ steps:
       - '--cpu=1'
       - '--timeout=3600s'
       - '--max-instances=100'
-      - '--set-env-vars=GEMINI_API_KEY=$_GEMINI_API_KEY,LOG_LEVEL=INFO,ENABLE_CACHING=true'
+      - '--set-env-vars=LOG_LEVEL=INFO,ENABLE_CACHING=true'
+      - '--set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest'
 
 images:
   - 'gcr.io/$PROJECT_ID/$_SERVICE_NAME:$SHORT_SHA'
@@ -37,7 +49,6 @@ images:
 substitutions:
   _SERVICE_NAME: 'ai-travel-platform'
   _REGION: 'us-central1'
-  _GEMINI_API_KEY: ''  # Set via Cloud Build secrets or pass as substitution
 
 options:
   machineType: 'N1_HIGHCPU_8'

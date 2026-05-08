@@ -3,7 +3,6 @@ import logging
 import sys
 import json
 import os
-from typing import Optional
 from datetime import datetime
 
 try:
@@ -31,7 +30,30 @@ class JSONFormatter(logging.Formatter):
 
         # Merge extra fields
         for key, value in record.__dict__.items():
-            if key not in ["args", "asctime", "created", "exc_info", "exc_text", "filename", "funcName", "levelname", "levelno", "lineno", "module", "msecs", "message", "msg", "name", "pathname", "process", "processName", "relativeCreated", "stack_info", "thread", "threadName"]:
+            if key not in {
+                "args",
+                "asctime",
+                "created",
+                "exc_info",
+                "exc_text",
+                "filename",
+                "funcName",
+                "levelname",
+                "levelno",
+                "lineno",
+                "module",
+                "msecs",
+                "message",
+                "msg",
+                "name",
+                "pathname",
+                "process",
+                "processName",
+                "relativeCreated",
+                "stack_info",
+                "thread",
+                "threadName",
+            }:
                 log_data[key] = value
 
         return json.dumps(log_data)
@@ -65,7 +87,8 @@ def get_logger(
     logger.addHandler(console_handler)
 
     # Cloud Logging handler (if on GCP)
-    if HAS_CLOUD_LOGGING and os.getenv("ENABLE_CLOUD_LOGGING", "false").lower() == "true":
+    cloud_logging_enabled = os.getenv("ENABLE_CLOUD_LOGGING", "false").lower()
+    if HAS_CLOUD_LOGGING and cloud_logging_enabled == "true":
         try:
             client = google.cloud.logging.Client()
             handler = CloudLoggingHandler(client, name=name)

@@ -1,16 +1,14 @@
 """Core trip planning engine."""
 import uuid
-from typing import Optional, Dict, Any
+from typing import Dict, Optional
 from datetime import datetime, timedelta
-import json
 
 from src.core import Config, get_logger, TravelPlanningError
 from src.models import (
-    TripRequest,
-    ItineraryResponse,
     DayItinerary,
-    Activity,
+    ItineraryResponse,
     Location,
+    TripRequest,
     Weather,
 )
 from src.models.validator import InputValidator
@@ -103,7 +101,9 @@ class TripPlanningEngine:
 
             # Get updated itinerary from AI
             updated_text = self.gemini_service.update_itinerary(
-                existing_text, update_request
+                session_id=trip_id,
+                user_request=update_request,
+                existing_plan=existing_text,
             )
 
             # Parse updated itinerary
@@ -187,9 +187,13 @@ class TripPlanningEngine:
                 current_day += 1
 
             # Set confidence based on various factors
-            itinerary.confidence_score = 0.85  # Would be calculated based on data quality
+            # Would be calculated from data quality signals in production.
+            itinerary.confidence_score = 0.85
 
-            logger.debug(f"Parsed itinerary with {len(itinerary.daily_itineraries)} days")
+            logger.debug(
+                "Parsed itinerary with %s days",
+                len(itinerary.daily_itineraries),
+            )
             return itinerary
 
         except Exception as e:

@@ -16,14 +16,13 @@ COPY src/ src/
 COPY main.py .
 EXPOSE 8080
 
-ENV GEMINI_API_KEY=placeholder
-
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Set environment variables
-ENV PORT=8080
+ENV PORT=8080 \
+    PYTHONUNBUFFERED=1
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

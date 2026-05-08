@@ -192,7 +192,7 @@ gcloud run deploy travel-planner \
   --source . \
   --platform managed \
   --region us-central1 \
-  --set-env-vars=GEMINI_API_KEY=your_key
+  --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
 ```
 
 ## 📚 API Documentation

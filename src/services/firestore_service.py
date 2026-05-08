@@ -61,9 +61,16 @@ class FirestoreService:
             logger.info(f"Saved document {document_id} to collection {collection}")
         except Exception as e:
             logger.error(f"Firestore save failed: {str(e)}")
-            raise GoogleServicesError(f"Failed to save document to Firestore: {str(e)}", service="Firestore")
+            raise GoogleServicesError(
+                f"Failed to save document to Firestore: {str(e)}",
+                service="Firestore",
+            )
 
-    def get_document(self, collection: str, document_id: str) -> Optional[Dict[str, Any]]:
+    def get_document(
+        self,
+        collection: str,
+        document_id: str,
+    ) -> Optional[Dict[str, Any]]:
         """Get a document from Firestore.
 
         Args:
@@ -86,7 +93,11 @@ class FirestoreService:
             logger.error(f"Firestore get failed: {str(e)}")
             return None
 
-    def query_documents(self, collection: str, filters: List[tuple]) -> List[Dict[str, Any]]:
+    def query_documents(
+        self,
+        collection: str,
+        filters: List[tuple],
+    ) -> List[Dict[str, Any]]:
         """Query documents in a collection.
 
         Args:

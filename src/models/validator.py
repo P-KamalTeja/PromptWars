@@ -2,7 +2,7 @@
 from typing import List
 from datetime import datetime
 from src.core import ValidationError
-from src.models import TripRequest, Budget, TravelerType, TravelPreferences
+from src.models import TripRequest
 
 
 class InputValidator:
@@ -19,17 +19,29 @@ class InputValidator:
             ValidationError: If destination is invalid
         """
         if not destination or not isinstance(destination, str):
-            raise ValidationError("Destination must be a non-empty string", field="destination")
+            raise ValidationError(
+                "Destination must be a non-empty string",
+                field="destination",
+            )
 
         if len(destination) < 2:
-            raise ValidationError("Destination must be at least 2 characters", field="destination")
+            raise ValidationError(
+                "Destination must be at least 2 characters",
+                field="destination",
+            )
 
         if len(destination) > 100:
-            raise ValidationError("Destination must be at most 100 characters", field="destination")
+            raise ValidationError(
+                "Destination must be at most 100 characters",
+                field="destination",
+            )
 
         # Check for valid characters (alphanumeric, spaces, hyphens, commas)
         if not all(c.isalnum() or c in " -," for c in destination):
-            raise ValidationError("Destination contains invalid characters", field="destination")
+            raise ValidationError(
+                "Destination contains invalid characters",
+                field="destination",
+            )
 
     @staticmethod
     def validate_budget(budget: float) -> None:
@@ -85,13 +97,19 @@ class InputValidator:
             ValidationError: If travelers count is invalid
         """
         if not isinstance(travelers, int):
-            raise ValidationError("Number of travelers must be an integer", field="travelers")
+            raise ValidationError(
+                "Number of travelers must be an integer",
+                field="travelers",
+            )
 
         if travelers < 1:
             raise ValidationError("Must have at least 1 traveler", field="travelers")
 
         if travelers > 100:
-            raise ValidationError("Cannot plan for more than 100 travelers", field="travelers")
+            raise ValidationError(
+                "Cannot plan for more than 100 travelers",
+                field="travelers",
+            )
 
     @staticmethod
     def validate_interests(interests: List[str]) -> None:
@@ -111,7 +129,10 @@ class InputValidator:
 
         for interest in interests:
             if not isinstance(interest, str) or len(interest) > 50:
-                raise ValidationError("Each interest must be a string with max 50 characters", field="interests")
+                raise ValidationError(
+                    "Each interest must be a string with max 50 characters",
+                    field="interests",
+                )
 
     @staticmethod
     def validate_trip_request(request: TripRequest) -> None:

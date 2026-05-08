@@ -1,22 +1,13 @@
 """Google Services integration module."""
+import json
+from typing import Any, Dict, List, Optional, Union
+
 import google.generativeai as genai
 import vertexai
-from vertexai.generative_models import GenerativeModel, ChatSession, ResponseSchema, GenerationConfig
-import asyncio
-from typing import Optional, Dict, Any, List, Union
-from datetime import datetime
-import time
-import json
+from vertexai.generative_models import ChatSession, GenerationConfig, GenerativeModel
 
 from src.core import Config, get_logger, GoogleServicesError
-from src.models import (
-    TripRequest,
-    ItineraryResponse,
-    DayItinerary,
-    Activity,
-    Location,
-    Weather,
-)
+from src.models import TripRequest, Weather
 
 
 logger = get_logger(__name__)
@@ -40,7 +31,10 @@ class GeminiService:
         """Initialize appropriate Gemini client based on config."""
         try:
             if self.config.USE_VERTEX_AI and self.config.GOOGLE_CLOUD_PROJECT:
-                logger.info(f"Initializing Vertex AI in project {self.config.GOOGLE_CLOUD_PROJECT}")
+                logger.info(
+                    "Initializing Vertex AI in project %s",
+                    self.config.GOOGLE_CLOUD_PROJECT,
+                )
                 vertexai.init(project=self.config.GOOGLE_CLOUD_PROJECT)
                 self.model = GenerativeModel("gemini-1.5-flash")
                 logger.info("Vertex AI Gemini client initialized successfully")
@@ -48,7 +42,9 @@ class GeminiService:
                 logger.info("Initializing Google Generative AI SDK")
                 genai.configure(api_key=self.config.GEMINI_API_KEY)
                 self.model = genai.GenerativeModel("gemini-1.5-flash")
-                logger.info("Google Generative AI Gemini client initialized successfully")
+                logger.info(
+                    "Google Generative AI Gemini client initialized successfully"
+                )
         except Exception as e:
             logger.error(f"Failed to initialize Gemini client: {str(e)}")
             raise GoogleServicesError(
@@ -73,13 +69,8 @@ class GeminiService:
         try:
             prompt = self._build_itinerary_prompt(trip_request, weather)
 
-            if isinstance(self.model, GenerativeModel):
-                # Vertex AI
-                response = self.model.generate_content(prompt)
-            else:
-                # Google Generative AI SDK
-                response = self.model.generate_content(prompt)
-                
+            response = self.model.generate_content(prompt)
+
             logger.info(
                 f"Successfully generated itinerary for {trip_request.destination}"
             )
@@ -116,7 +107,10 @@ class GeminiService:
                 self.chat_sessions[session_id] = self.model.start_chat()
                 if existing_plan:
                     # Initialize session with the existing plan
-                    initial_msg = f"Here is my existing trip plan:\n\n{existing_plan}\n\nPlease help me update it."
+                    initial_msg = (
+                        "Here is my existing trip plan:\n\n"
+                        f"{existing_plan}\n\nPlease help me update it."
+                    )
                     self.chat_sessions[session_id].send_message(initial_msg)
 
             response = self.chat_sessions[session_id].send_message(user_request)
@@ -167,13 +161,15 @@ Return a JSON object with the following structure:
 """
             generation_config = None
             if self.config.USE_VERTEX_AI:
-                generation_config = GenerationConfig(response_mime_type="application/json")
-            
+                generation_config = GenerationConfig(
+                    response_mime_type="application/json"
+                )
+
             response = self.model.generate_content(
                 prompt,
-                generation_config=generation_config
+                generation_config=generation_config,
             )
-            
+
             content = response.text
             # If not using Vertex AI or if it didn't return pure JSON, try to parse
             try:
@@ -182,10 +178,12 @@ Return a JSON object with the following structure:
                     content = content.split("```json")[1].split("```")[0].strip()
                 elif "```" in content:
                     content = content.split("```")[1].split("```")[0].strip()
-                
+
                 return json.loads(content)
             except json.JSONDecodeError:
-                logger.warning("Failed to parse Gemini response as JSON, returning raw text")
+                logger.warning(
+                    "Failed to parse Gemini response as JSON, returning raw text"
+                )
                 return {"raw_response": content}
 
         except Exception as e:
@@ -208,7 +206,8 @@ Current Weather in {trip_request.destination}:
 - Humidity: {weather.humidity}%
 """
 
-        prompt = f"""You are an expert AI travel planner creating a detailed, personalized travel itinerary.
+        prompt = f"""You are an expert AI travel planner creating a detailed,
+personalized travel itinerary.
 
 TRIP DETAILS:
 Destination: {trip_request.destination}

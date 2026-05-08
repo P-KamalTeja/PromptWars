@@ -1,6 +1,5 @@
 """Web UI interface using Gradio."""
 import gradio as gr
-from typing import Optional
 from datetime import datetime, timedelta
 
 from src.core import Config, get_logger
@@ -78,6 +77,10 @@ class GradioUI:
             itinerary = self.engine.plan_trip(trip_request)
 
             # Format response
+            accommodation_budget = itinerary.trip_request.budget.get_allocation(
+                "accommodation"
+            )
+
             response = f"""
 # ✈️ Your Travel Itinerary for {destination}
 
@@ -105,7 +108,7 @@ class GradioUI:
 ---
 
 ## Budget Breakdown
-- **Accommodation:** ${itinerary.trip_request.budget.get_allocation('accommodation'):,.2f}
+- **Accommodation:** ${accommodation_budget:,.2f}
 - **Activities:** ${itinerary.trip_request.budget.get_allocation('activities'):,.2f}
 - **Food & Dining:** ${itinerary.trip_request.budget.get_allocation('food'):,.2f}
 - **Transportation:** ${itinerary.trip_request.budget.get_allocation('transport'):,.2f}
@@ -125,7 +128,10 @@ class GradioUI:
 
         except Exception as e:
             logger.error(f"Trip planning error: {str(e)}")
-            return f"❌ Error planning trip: {str(e)}\n\nPlease check your inputs and try again."
+            return (
+                f"❌ Error planning trip: {str(e)}\n\n"
+                "Please check your inputs and try again."
+            )
 
     def update_trip_handler(self, trip_id: str, update_request: str) -> str:
         """Handle trip update request.
@@ -141,7 +147,10 @@ class GradioUI:
             updated_trip = self.engine.update_trip(trip_id, update_request)
 
             if not updated_trip:
-                return f"❌ Trip '{trip_id}' not found.\n\nPlease ensure the trip ID is correct."
+                return (
+                    f"❌ Trip '{trip_id}' not found.\n\n"
+                    "Please ensure the trip ID is correct."
+                )
 
             return f"""
 # ✈️ Updated Itinerary
@@ -297,7 +306,10 @@ Customize based on your budget, interests, and preferences.
 
                     update_request = gr.Textbox(
                         label="What would you like to change?",
-                        placeholder="e.g., Add more museums, reduce budget, add family-friendly activities",
+                        placeholder=(
+                            "e.g., Add more museums, reduce budget, "
+                            "add family-friendly activities"
+                        ),
                         lines=4,
                         info="Describe your changes or preferences",
                     )

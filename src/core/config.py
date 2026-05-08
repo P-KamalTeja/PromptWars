@@ -1,8 +1,10 @@
 """Configuration management module."""
 import os
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
 from functools import lru_cache
+from typing import List, Optional
+
+from dotenv import load_dotenv
 
 try:
     from google.cloud import secretmanager
@@ -50,29 +52,29 @@ class Config:
     ENABLE_EVENTS: bool = True
 
     # Security
-    ALLOWED_ORIGINS: list = None
+    ALLOWED_ORIGINS: List[str] = field(default_factory=lambda: ["*"])
     API_KEY_HEADER: str = "X-API-Key"
     MAX_REQUEST_SIZE: int = 1048576  # 1MB
 
     def __post_init__(self):
         """Validate and setup configuration."""
         if not self.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY environment variable or secret is required")
-
-        if self.ALLOWED_ORIGINS is None:
-            self.ALLOWED_ORIGINS = ["*"]
+            raise ValueError(
+                "GEMINI_API_KEY environment variable or secret is required"
+            )
 
     @staticmethod
     @lru_cache(maxsize=1)
     def from_env() -> "Config":
         """Load configuration from environment variables or Secret Manager."""
+        load_dotenv()
         project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
-        
+
         def get_val(key: str, default: Optional[str] = None) -> Optional[str]:
             val = os.getenv(key)
             if val:
                 return val
-            
+
             # Try Secret Manager if on GCP
             if HAS_SECRET_MANAGER and project_id:
                 try:

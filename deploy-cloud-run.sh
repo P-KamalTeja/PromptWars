@@ -128,9 +128,17 @@ setup_secret() {
         # Grant Cloud Build service account access
         SA_EMAIL=$(gcloud projects describe "$PROJECT_ID" \
             --format='value(projectNumber)')@cloudbuild.gserviceaccount.com
+        RUNTIME_SA_EMAIL=$(gcloud projects describe "$PROJECT_ID" \
+            --format='value(projectNumber)')-compute@developer.gserviceaccount.com
 
         gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
             --member="serviceAccount:$SA_EMAIL" \
+            --role=roles/secretmanager.secretAccessor \
+            --project="$PROJECT_ID" \
+            2>/dev/null || true
+
+        gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
+            --member="serviceAccount:$RUNTIME_SA_EMAIL" \
             --role=roles/secretmanager.secretAccessor \
             --project="$PROJECT_ID" \
             2>/dev/null || true
@@ -145,20 +153,10 @@ setup_secret() {
 deploy_with_cloud_build() {
     print_info "Deploying using Cloud Build..."
 
-    # Get the API key for substitution (if provided)
-    if [ -n "$GEMINI_API_KEY" ]; then
-        API_KEY_SUBSTITUTION="$GEMINI_API_KEY"
-    else
-        # Use the secret version
-        API_KEY_SUBSTITUTION=$(gcloud secrets versions access latest \
-            --secret=GEMINI_API_KEY \
-            --project="$PROJECT_ID" 2>/dev/null || echo "")
-    fi
-
     print_info "Starting Cloud Build..."
     gcloud builds submit \
         --config=cloudbuild.yaml \
-        --substitutions="_SERVICE_NAME=$SERVICE_NAME,_REGION=$REGION,_GEMINI_API_KEY=$API_KEY_SUBSTITUTION" \
+        --substitutions="_SERVICE_NAME=$SERVICE_NAME,_REGION=$REGION" \
         --project="$PROJECT_ID"
 
     print_success "Cloud Build deployment initiated"
@@ -228,6 +226,7 @@ show_summary() {
     echo "  View logs:     gcloud run services logs read $SERVICE_NAME --region=$REGION --follow"
     echo "  View status:   gcloud run services describe $SERVICE_NAME --region=$REGION"
     echo "  Update env:    gcloud run services update $SERVICE_NAME --region=$REGION --set-env-vars=KEY=VALUE"
+    echo "  Update secret: gcloud run services update $SERVICE_NAME --region=$REGION --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest"
     echo "  Delete:        gcloud run services delete $SERVICE_NAME --region=$REGION"
     echo ""
     print_success "═══════════════════════════════════════════════════"

@@ -8,10 +8,6 @@ For new usage, please use:
 This file is kept for backward compatibility.
 """
 import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
 
 from main import main
 
@@ -19,4 +15,4 @@ if __name__ == "__main__":
     # Default to web UI for legacy compatibility
     sys.argv.append("--ui")
     sys.argv.append("web")
-    main()
+    main()

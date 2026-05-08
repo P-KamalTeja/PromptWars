@@ -1,20 +1,14 @@
 """Application tests."""
 import pytest
-import sys
-from pathlib import Path
 from datetime import datetime, timedelta
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from src.core import Config, ValidationError, TravelPlanningError
+from src.core import Config, ValidationError
 from src.models import (
-    TripRequest,
-    TravelerType,
-    TravelPreferences,
     Budget,
     Location,
-    Activity,
+    TravelerType,
+    TravelPreferences,
+    TripRequest,
     Weather,
 )
 from src.models.validator import InputValidator

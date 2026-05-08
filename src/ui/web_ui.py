@@ -1,7 +1,5 @@
 """Modern web interface using Flask and HTML/CSS/JS."""
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from pathlib import Path
-import json
 
 from src.core import Config, get_logger
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget

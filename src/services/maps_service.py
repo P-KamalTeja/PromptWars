@@ -2,7 +2,7 @@
 import requests
 from typing import Optional, Dict, Any, List
 
-from src.core import Config, get_logger, GoogleServicesError
+from src.core import Config, get_logger
 
 logger = get_logger(__name__)
 
@@ -38,7 +38,10 @@ class MapsService:
             params = {
                 "place_id": place_id,
                 "key": self.api_key,
-                "fields": "name,rating,formatted_address,website,opening_hours,photos,reviews"
+                "fields": (
+                    "name,rating,formatted_address,website,opening_hours,"
+                    "photos,reviews"
+                ),
             }
             
             response = requests.get(url, params=params, timeout=10)
@@ -48,13 +51,20 @@ class MapsService:
             if data.get("status") == "OK":
                 return data.get("result")
             
-            logger.warning(f"Place details request failed with status: {data.get('status')}")
+            logger.warning(
+                "Place details request failed with status: %s",
+                data.get("status"),
+            )
             return None
         except Exception as e:
             logger.error(f"Maps Place Details failed: {str(e)}")
             return None
 
-    def search_places(self, query: str, location: Optional[str] = None) -> List[Dict[str, Any]]:
+    def search_places(
+        self,
+        query: str,
+        location: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
         """Search for places based on a query.
 
         Args:
@@ -88,7 +98,12 @@ class MapsService:
             logger.error(f"Maps Place Search failed: {str(e)}")
             return []
 
-    def get_distance_matrix(self, origins: List[str], destinations: List[str], mode: str = "driving") -> Optional[Dict[str, Any]]:
+    def get_distance_matrix(
+        self,
+        origins: List[str],
+        destinations: List[str],
+        mode: str = "driving",
+    ) -> Optional[Dict[str, Any]]:
         """Get distance and travel time between locations.
 
         Args:

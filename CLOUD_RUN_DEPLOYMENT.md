@@ -83,7 +83,7 @@ cd /path/to/PromptWars
 # Deploy using Cloud Build
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions="_SERVICE_NAME=ai-travel-platform,_REGION=us-central1,_GEMINI_API_KEY=$(gcloud secrets versions access latest --secret=GEMINI_API_KEY)"
+  --substitutions="_SERVICE_NAME=ai-travel-platform,_REGION=us-central1"
 ```
 
 ### Step 5: Monitor Deployment
@@ -391,7 +391,7 @@ jobs:
         run: |
           gcloud builds submit \
             --config=cloudbuild.yaml \
-            --substitutions="_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}"
+            --substitutions="_SERVICE_NAME=ai-travel-platform,_REGION=us-central1"
 ```
 
 ### GitLab CI
@@ -408,7 +408,7 @@ deploy_cloud_run:
     - |
       gcloud builds submit \
         --config=cloudbuild.yaml \
-        --substitutions="_GEMINI_API_KEY=$GEMINI_API_KEY"
+        --substitutions="_SERVICE_NAME=ai-travel-platform,_REGION=us-central1"
   only:
     - main
 ```

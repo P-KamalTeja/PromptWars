@@ -1,7 +1,6 @@
 """Weather service integration."""
 import requests
 from typing import Optional
-from datetime import datetime
 
 from src.core import Config, get_logger, GoogleServicesError
 from src.models import Weather

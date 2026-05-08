@@ -1,10 +1,6 @@
 """Main application entry point."""
 import argparse
 import sys
-from pathlib import Path
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
 
 from src.core import Config, get_logger
 from src.ui import GradioUI, WebUI

@@ -2,7 +2,6 @@
 import os
 from typing import Optional, List
 from google.cloud import storage
-from pathlib import Path
 
 from src.core import Config, get_logger, GoogleServicesError
 
@@ -53,18 +52,29 @@ class StorageService:
             GoogleServicesError: If upload fails
         """
         if not self.client or not self.bucket_name:
-            raise GoogleServicesError("GCS client or bucket not configured", service="Storage")
+            raise GoogleServicesError(
+                "GCS client or bucket not configured",
+                service="Storage",
+            )
 
         try:
             bucket = self.client.bucket(self.bucket_name)
             blob = bucket.blob(remote_path)
             blob.upload_from_filename(local_path, content_type=content_type)
             
-            logger.info(f"Successfully uploaded {local_path} to gs://{self.bucket_name}/{remote_path}")
+            logger.info(
+                "Successfully uploaded %s to gs://%s/%s",
+                local_path,
+                self.bucket_name,
+                remote_path,
+            )
             return f"https://storage.googleapis.com/{self.bucket_name}/{remote_path}"
         except Exception as e:
             logger.error(f"GCS upload failed: {str(e)}")
-            raise GoogleServicesError(f"Failed to upload to GCS: {str(e)}", service="Storage")
+            raise GoogleServicesError(
+                f"Failed to upload to GCS: {str(e)}",
+                service="Storage",
+            )
 
     def download_file(self, remote_path: str, local_path: str):
         """Download a file from GCS.
@@ -77,16 +87,27 @@ class StorageService:
             GoogleServicesError: If download fails
         """
         if not self.client or not self.bucket_name:
-            raise GoogleServicesError("GCS client or bucket not configured", service="Storage")
+            raise GoogleServicesError(
+                "GCS client or bucket not configured",
+                service="Storage",
+            )
 
         try:
             bucket = self.client.bucket(self.bucket_name)
             blob = bucket.blob(remote_path)
             blob.download_to_filename(local_path)
-            logger.info(f"Successfully downloaded gs://{self.bucket_name}/{remote_path} to {local_path}")
+            logger.info(
+                "Successfully downloaded gs://%s/%s to %s",
+                self.bucket_name,
+                remote_path,
+                local_path,
+            )
         except Exception as e:
             logger.error(f"GCS download failed: {str(e)}")
-            raise GoogleServicesError(f"Failed to download from GCS: {str(e)}", service="Storage")
+            raise GoogleServicesError(
+                f"Failed to download from GCS: {str(e)}",
+                service="Storage",
+            )
 
     def list_files(self, prefix: Optional[str] = None) -> List[str]:
         """List files in the bucket.

@@ -3,7 +3,6 @@ from typing import Dict, Any
 from datetime import datetime
 from flask import Flask, request, jsonify
 from functools import wraps
-import time
 
 from src.core import Config, get_logger, APIError, ValidationError
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget
@@ -55,7 +54,11 @@ class TravelAPI:
             except ValidationError as e:
                 return (
                     jsonify(
-                        {"error": e.message, "error_code": e.error_code, "field": e.field}
+                        {
+                            "error": e.message,
+                            "error_code": e.error_code,
+                            "field": e.field,
+                        }
                     ),
                     e.status_code,
                 )
@@ -105,7 +108,11 @@ class TravelAPI:
             except ValidationError as e:
                 return (
                     jsonify(
-                        {"error": e.message, "error_code": e.error_code, "field": e.field}
+                        {
+                            "error": e.message,
+                            "error_code": e.error_code,
+                            "field": e.field,
+                        }
                     ),
                     e.status_code,
                 )
@@ -183,7 +190,6 @@ class TravelAPI:
         @wraps(f)
         def decorated_function(*args, **kwargs):
             # Simplified rate limiting - in production would use Redis/cache
-            client_ip = request.remote_addr
             # Rate limit logic would go here
             return f(*args, **kwargs)
 

@@ -189,7 +189,7 @@ docker run -p 8080:8080 -e GEMINI_API_KEY=key travel-planner:latest
 ### Cloud
 ```bash
 gcloud builds submit --config=cloudbuild.yaml
-gcloud run deploy travel-planner --source . --set-env-vars=GEMINI_API_KEY=key
+gcloud run deploy travel-planner --source . --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest
 ```
 
 ---
