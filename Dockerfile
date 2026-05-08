@@ -14,7 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application
 COPY src/ src/
 COPY main.py .
-COPY .env.example .env
+EXPOSE 8080
+
+ENV GEMINI_API_KEY=placeholder
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app

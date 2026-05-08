@@ -45,6 +45,11 @@ class WebUI:
             """Serve static files."""
             return send_from_directory(self.app.static_folder, filename)
 
+        @self.app.route("/health")
+        def health():
+            """Health check endpoint for Cloud Run."""
+            return "OK", 200
+
         @self.app.route("/api/plan", methods=["POST"])
         def plan_trip():
             """API endpoint for trip planning."""
