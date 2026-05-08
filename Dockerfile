@@ -16,7 +16,7 @@ COPY src/ src/
 COPY main.py .
 EXPOSE 8080
 
-ENV GEMINI_API_KEY=${GEMINI_API_KEY}
+ENV GEMINI_API_KEY=placeholder
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
@@ -28,6 +28,4 @@ ENV PORT=8080
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${PORT}/health || exit 1
-
-# Default to web UI
-CMD ["sh", "-c", "exec python main.py --ui web --host 0.0.0.0 --port $PORT"]
+CMD ["python", "main.py", "--ui", "web", "--host", "0.0.0.0"]
