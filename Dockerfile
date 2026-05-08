@@ -23,13 +23,11 @@ RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV GRADIO_SERVER_NAME="0.0.0.0"
-ENV GRADIO_SERVER_PORT=8080
+ENV PORT=8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/health || exit 1
+    CMD curl -f http://localhost:${PORT}/health || exit 1
 
 # Default to web UI
 CMD ["python", "main.py", "--ui", "web", "--host", "0.0.0.0", "--port", "8080"]
