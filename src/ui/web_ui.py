@@ -2,7 +2,8 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory
+from werkzeug.exceptions import BadRequest, HTTPException
 
 from src.core import Config, get_logger
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget
@@ -47,6 +48,9 @@ class WebUI:
         @self.app.errorhandler(Exception)
         def handle_unexpected_error(error):
             """Return a clear response for uncaught web errors."""
+            if isinstance(error, HTTPException):
+                return error
+
             logger.exception("Unhandled web error: %s", error)
             if request.path.startswith("/api/"):
                 return jsonify({"error": "Internal server error"}), 500
@@ -58,6 +62,17 @@ class WebUI:
                 500,
                 {"Content-Type": "text/html; charset=utf-8"},
             )
+
+        @self.app.after_request
+        def add_security_headers(response):
+            """Attach baseline browser security headers."""
+            response.headers.setdefault("X-Content-Type-Options", "nosniff")
+            response.headers.setdefault("X-Frame-Options", "DENY")
+            response.headers.setdefault(
+                "Referrer-Policy",
+                "strict-origin-when-cross-origin",
+            )
+            return response
 
         @self.app.route("/")
         def index():
@@ -89,7 +104,9 @@ class WebUI:
         def plan_trip():
             """API endpoint for trip planning."""
             try:
-                data = request.get_json()
+                data = request.get_json(silent=True)
+                if not isinstance(data, dict):
+                    return jsonify({"error": "JSON request body is required"}), 400
 
                 # Validate required fields
                 required = ["destination", "budget", "days", "travelers"]
@@ -138,9 +155,12 @@ class WebUI:
                     }
                 ), 201
 
-            except Exception as e:
-                logger.error(f"Trip planning error: {str(e)}")
-                return jsonify({"error": str(e)}), 500
+            except (TypeError, ValueError, BadRequest) as e:
+                logger.warning("Invalid trip planning request: %s", e)
+                return jsonify({"error": "Invalid trip planning request"}), 400
+            except Exception:
+                logger.exception("Trip planning error")
+                return jsonify({"error": "Trip planning failed"}), 500
 
         @self.app.route("/api/trips/<trip_id>", methods=["GET"])
         def get_trip(trip_id: str):
@@ -152,9 +172,9 @@ class WebUI:
 
                 return jsonify(trip.to_dict()), 200
 
-            except Exception as e:
-                logger.error(f"Retrieve error: {str(e)}")
-                return jsonify({"error": str(e)}), 500
+            except Exception:
+                logger.exception("Trip retrieval error")
+                return jsonify({"error": "Trip retrieval failed"}), 500
 
         @self.app.route("/api/trips/<trip_id>/update", methods=["POST"])
         def update_trip(trip_id: str):
@@ -173,9 +193,9 @@ class WebUI:
 
                 return jsonify(updated_trip.to_dict()), 200
 
-            except Exception as e:
-                logger.error(f"Update error: {str(e)}")
-                return jsonify({"error": str(e)}), 500
+            except Exception:
+                logger.exception("Trip update error")
+                return jsonify({"error": "Trip update failed"}), 500
 
     def run(
         self,
@@ -194,5 +214,5 @@ class WebUI:
         port = port or self.config.PORT
         debug = debug if debug is not None else self.config.DEBUG
 
-        logger.info(f"Starting Web UI on {host}:{port}")
+        logger.info("Starting Web UI on %s:%s", host, port)
         self.app.run(host=host, port=port, debug=debug, use_reloader=debug)
