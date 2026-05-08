@@ -3,7 +3,6 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 from src.core import Config, get_logger
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget
-from src.api.trip_engine import TripPlanningEngine
 from datetime import datetime, timedelta
 
 
@@ -20,7 +19,7 @@ class WebUI:
             config: Application configuration
         """
         self.config = config
-        self.engine = TripPlanningEngine(config)
+        self._engine = None
 
         self.app = Flask(
             __name__,
@@ -29,6 +28,15 @@ class WebUI:
         )
 
         self._setup_routes()
+
+    @property
+    def engine(self):
+        """Create the trip engine only when an API request needs it."""
+        if self._engine is None:
+            from src.api.trip_engine import TripPlanningEngine
+
+            self._engine = TripPlanningEngine(self.config)
+        return self._engine
 
     def _setup_routes(self):
         """Setup Flask routes."""

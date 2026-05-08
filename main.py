@@ -1,9 +1,9 @@
 """Main application entry point."""
 import argparse
+import os
 import sys
 
 from src.core import Config, get_logger
-from src.ui import GradioUI, WebUI
 
 
 logger = get_logger(__name__)
@@ -31,14 +31,14 @@ Examples:
     )
     parser.add_argument(
         "--host",
-        default="0.0.0.0",
-        help="Server host (default: 0.0.0.0)",
+        default=os.getenv("HOST", "0.0.0.0"),
+        help="Server host (default: HOST env var or 0.0.0.0)",
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=8080,
-        help="Server port (default: 8080)",
+        default=int(os.getenv("PORT", "8080")),
+        help="Server port (default: PORT env var or 8080)",
     )
     parser.add_argument(
         "--debug",
@@ -65,11 +65,15 @@ Examples:
 
         # Launch UI
         if args.ui == "web":
+            from src.ui.web_ui import WebUI
+
             logger.info("Launching Web UI...")
             ui = WebUI(config)
             ui.run(host=args.host, port=args.port, debug=args.debug)
 
         elif args.ui == "gradio":
+            from src.ui.gradio_ui import GradioUI
+
             logger.info("Launching Gradio UI...")
             ui = GradioUI(config)
             ui.launch(

@@ -39,6 +39,11 @@ class GeminiService:
                 self.model = GenerativeModel("gemini-1.5-flash")
                 logger.info("Vertex AI Gemini client initialized successfully")
             else:
+                if not self.config.GEMINI_API_KEY:
+                    raise GoogleServicesError(
+                        "GEMINI_API_KEY is required for Gemini API access",
+                        service="Gemini",
+                    )
                 logger.info("Initializing Google Generative AI SDK")
                 genai.configure(api_key=self.config.GEMINI_API_KEY)
                 self.model = genai.GenerativeModel("gemini-1.5-flash")

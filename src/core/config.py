@@ -59,8 +59,11 @@ class Config:
     def __post_init__(self):
         """Validate and setup configuration."""
         if not self.GEMINI_API_KEY:
-            raise ValueError(
-                "GEMINI_API_KEY environment variable or secret is required"
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "GEMINI_API_KEY is not configured; AI trip planning requests "
+                "will fail until the key is provided"
             )
 
     @staticmethod
