@@ -1,12 +1,15 @@
 """Modern web interface using Flask and HTML/CSS/JS."""
+from datetime import datetime, timedelta
+from pathlib import Path
+
 from flask import Flask, render_template, request, jsonify, send_from_directory
 
 from src.core import Config, get_logger
 from src.models import TripRequest, TravelerType, TravelPreferences, Budget
-from datetime import datetime, timedelta
 
 
 logger = get_logger(__name__)
+UI_DIR = Path(__file__).resolve().parent
 
 
 class WebUI:
@@ -23,8 +26,8 @@ class WebUI:
 
         self.app = Flask(
             __name__,
-            template_folder="src/ui/templates",
-            static_folder="src/ui/static",
+            template_folder=str(UI_DIR / "templates"),
+            static_folder=str(UI_DIR / "static"),
         )
 
         self._setup_routes()
@@ -44,7 +47,14 @@ class WebUI:
         @self.app.route("/")
         def index():
             """Serve main page."""
-            return render_template("index.html")
+            try:
+                return render_template("index.html")
+            except Exception:
+                logger.exception(
+                    "Failed to render index.html from %s",
+                    self.app.template_folder,
+                )
+                raise
 
         @self.app.route("/static/<path:filename>")
         def serve_static(filename):
